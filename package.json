@@ -1,18 +1,17 @@
 {
-	"name": "@mmstudio/widgets",
+	"name": "@mmstudio/wm000001",
 	"version": "1.0.0",
-	"description": "$desc",
+	"description": "WebView",
 	"scripts": {
 		"test": "tsc -w",
 		"clean": "del-cli ./dist/",
 		"lint": "eslint ./src/**/*.tsx",
 		"compile": "tsc",
-		"build": "npm run clean && npm run lint && npm run compile",
-		"up": "git pull git@github.com:mm-core/base.git master"
+		"build": "npm run clean && npm run lint && npm run compile"
 	},
 	"repository": {
 		"type": "https+git",
-		"url": "https://github.com/mm-core/base.git"
+		"url": "https://github.com/mm-widgets/wm000001.git"
 	},
 	"main": "dist/index.js",
 	"module": "dist/index.js",
@@ -28,8 +27,8 @@
 		"框架"
 	],
 	"author": {
-		"name": "$user",
-		"email": "$email@xxx.com"
+		"name": "taoqf",
+		"email": "tao_qiufeng@126.com"
 	},
 	"maintainers": [
 		{
