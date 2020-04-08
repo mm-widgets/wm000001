@@ -1,6 +1,6 @@
 {
 	"name": "@mmstudio/wm000001",
-	"version": "1.0.0",
+	"version": "1.0.202004081039",
 	"description": "WebView",
 	"scripts": {
 		"test": "tsc -w",
