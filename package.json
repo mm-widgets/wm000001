@@ -37,10 +37,8 @@
 		}
 	],
 	"license": "MIT",
-	"dependencies": {
-		"react-native-webview": "^9.1.0"
-	},
 	"peerDependencies": {
+		"react-native-webview": "*",
 		"@mmstudio/am000001": "*"
 	},
 	"devDependencies": {
@@ -56,6 +54,7 @@
 		"eslint-plugin-react": "latest",
 		"react": "latest",
 		"react-native": "latest",
+		"react-native-webview": "latest",
 		"typescript": "next"
 	}
 }
