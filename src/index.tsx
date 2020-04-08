@@ -116,7 +116,7 @@ export default class extends Component<Props, IOptionsState> {
 				} else if (typeof this.props.progressInnerImage === 'number') {
 					return this.props.progressInnerImage;
 				}
-				return require('./images/logo.png');
+				return require('../images/logo.png');
 			})(),
 			OuterImage: (() => {
 				if (typeof this.props.progressOuterImage === 'string') {
@@ -124,7 +124,7 @@ export default class extends Component<Props, IOptionsState> {
 				} else if (typeof this.props.progressOuterImage === 'number') {
 					return this.props.progressOuterImage;
 				}
-				return require('./images/circle.png');
+				return require('../images/circle.png');
 			})(),
 			flag: false,
 			progress: 0
