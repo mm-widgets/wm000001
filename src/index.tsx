@@ -377,7 +377,6 @@ export default class MMWebview extends Component<Props, IOptionsState> {
 				this.webview = ins!;
 			}}
 			source={source}
-			userAgent='mm-hybrid'
 			onLoadProgress={(res: WebViewProgressEvent) => {
 				this.setState({
 					progress: res.nativeEvent.progress
