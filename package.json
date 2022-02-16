@@ -3,7 +3,6 @@
 	"version": "1.0.202004170938",
 	"description": "WebView",
 	"scripts": {
-		"test": "tsc -w",
 		"clean": "del-cli ./dist/",
 		"lint": "eslint ./src/**/*.tsx",
 		"compile": "tsc",
