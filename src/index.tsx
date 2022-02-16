@@ -1,8 +1,9 @@
+import { ProgressBar } from '@react-native-community/progress-bar-android';
+import { ProgressView } from '@react-native-community/progress-view';
 import React, { Component } from 'react';
-import { Animated, Easing, ImageSourcePropType, Platform, ProgressBarAndroid, ProgressViewIOS, StyleProp, View, ViewStyle } from 'react-native';
+import { Animated, Easing, ImageSourcePropType, Platform, StyleProp, View, ViewStyle } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { WebViewMessageEvent, WebViewProgressEvent } from 'react-native-webview/lib/WebViewTypes';
-import am1 from '@mmstudio/am000001';
 
 interface IOptionsState {
 	progress: number;
@@ -12,7 +13,7 @@ interface IOptionsState {
 }
 
 interface IBaseProps {
-	mm: am1;
+	onMessage?<M>(type: string, msg: M): unknown;
 	/**
 	 * 进度条的环部分
 	 */
@@ -71,7 +72,7 @@ interface IBaseProps {
 	loadingBackgroundColor?: string;
 	style?: StyleProp<ViewStyle>;
 
-	onReady?(): void;
+	onListen?(type: string, ins: MMWebview): void;
 	onError?(): void;
 	onLoad?(): void;
 	onLoadEnd?(): void;
@@ -86,16 +87,20 @@ interface IProps2 extends IBaseProps {
 	html: string;
 }
 
-type Props = IProps1 | IProps2;
+interface IProps3 extends IBaseProps {
+	src: string;
+}
 
-function responseweb(webview: WebView, { id }: IMsg, result: unknown) {
+type Props = IProps1 | IProps2 | IProps3;
+
+function responseweb(webview: WebView, msgid: string, result: unknown) {
 	// 这时，web中应已注册全局函数 function m${id}(content: unknown);等待调用
 	// 调用web中已注册的函数，web中收到该函数后（或超时）应反注册（删除）该全局函数,该函数如果不存在也不会抛出异常，所以这里可以不用处理函数不存在的情况
 	const content = JSON.stringify(result === undefined ? null : result);
-	webview.injectJavaScript(`m${id}(${JSON.stringify(content)});`);	// 多一层`JSON.stringify`是为了将其变为代码的时候保证是双引号括起来的, 如content为null时， m001("null")
+	webview.injectJavaScript(`mm${msgid}(${JSON.stringify(content)});`);	// 多一层`JSON.stringify`是为了将其变为代码的时候保证是双引号括起来的, 如content为null时， m001("null")
 }
 
-export default class extends Component<Props, IOptionsState> {
+export default class MMWebview extends Component<Props, IOptionsState> {
 	public static defaultProps = {
 		loadingBackgroundColor: 'white',
 		progressBarColor: 'red'
@@ -103,11 +108,12 @@ export default class extends Component<Props, IOptionsState> {
 	private spinValue: Animated.Value;
 	private scaleValue: Animated.Value;
 	private opacityValue: Animated.Value;
-	private spinAnim: Animated.CompositeAnimation;
-	private scaleAnim: Animated.CompositeAnimation;
-	private webview: WebView;
-	public constructor(props: Props, context?: unknown) {
-		super(props, context);
+	private spinAnim!: Animated.CompositeAnimation;
+	private scaleAnim!: Animated.CompositeAnimation;
+	private webview!: WebView;
+	private weblisteners = new Map<string, string[]>();
+	public constructor(props: Props) {
+		super(props);
 		this.state = {
 			...props,
 			InnerImage: (() => {
@@ -116,7 +122,7 @@ export default class extends Component<Props, IOptionsState> {
 				} else if (typeof this.props.progressInnerImage === 'number') {
 					return this.props.progressInnerImage;
 				}
-				return require('../images/logo.png');
+				return require('../images/logo.png') as number;
 			})(),
 			OuterImage: (() => {
 				if (typeof this.props.progressOuterImage === 'string') {
@@ -124,7 +130,7 @@ export default class extends Component<Props, IOptionsState> {
 				} else if (typeof this.props.progressOuterImage === 'number') {
 					return this.props.progressOuterImage;
 				}
-				return require('../images/circle.png');
+				return require('../images/circle.png') as number;
 			})(),
 			flag: false,
 			progress: 0
@@ -132,6 +138,18 @@ export default class extends Component<Props, IOptionsState> {
 		this.spinValue = new Animated.Value(0);
 		this.scaleValue = new Animated.Value(0);
 		this.opacityValue = new Animated.Value(1);
+		// this.spinAnim = Animated.timing(this.spinValue, {
+		// 	duration: 800,
+		// 	easing: Easing.linear,
+		// 	toValue: 1,
+		// 	useNativeDriver: true
+		// });
+		// this.scaleAnim = Animated.sequence([
+		// 	Animated.timing(this.scaleValue, { toValue: 1, useNativeDriver: true, duration: 200 }),
+		// 	Animated.delay(500),
+		// 	Animated.timing(this.opacityValue, { toValue: 0, useNativeDriver: true }),
+		// 	Animated.timing(this.scaleValue, { toValue: 0, useNativeDriver: true, duration: 200 })
+		// ]);
 	}
 
 	public componentDidMount() {
@@ -176,21 +194,35 @@ export default class extends Component<Props, IOptionsState> {
 		});
 	}
 
-	public fire<T>(action: string, msg: unknown, timeout: number) {
+	/**
+	 * 调用浏览器方法
+	 * !!! 如果浏览器监听了多次，该方法只返回其中任意一个监听的返回结果
+	 */
+	public fire<T, M = unknown>(type: string, msg: M, timeout = 1000) {
 		const id = uuid();
 		const m = {
-			action,
 			content: msg === undefined ? null : msg,
 			id,
-			type: MessageType.native2web
+			type: MessageType.native2web,
+			msgtype: type
 		};
 		const content = JSON.stringify(m);
 		const webview = this.webview;
+		const ptype = JSON.stringify(type);
+		const pcontent = JSON.stringify(content);
+		const ids = this.weblisteners.get(type);
+		if (!ids || ids.length === 0) {
+			throw new Error('No listener');
+		}
+		const scripts = ids.map((id) => {
+			return `mm${id}(${ptype},${pcontent})`;
+		});
 		// !!! ExceptionsManager.js:82 Error evaluating injectedJavaScript: This is possibly due to an unsupported return type. Try adding true to the end of your injectedJavaScript string.
 		// !!! we must add `true;` at the end of the script.
-		webview.injectJavaScript(`mmrn(${JSON.stringify(content)});true;`);
+		webview.injectJavaScript(`(${scripts.join(',')});true;`);
 		return add<T>(m, timeout);
 	}
+
 	public render() {
 		if (this.state.progress === 1) {
 			this.scaleAnim.stop();
@@ -213,19 +245,19 @@ export default class extends Component<Props, IOptionsState> {
 		const props = this.props as IProps1;
 		if (props.uri && this.state.progress !== 1) {
 			if (Platform.OS === 'ios') {
-				return <ProgressViewIOS
+				return <ProgressView
 					progress={this.state.progress}
 					progressTintColor={this.props.progressBarColor}
 					progressViewStyle='bar'
-				></ProgressViewIOS>;
+				></ProgressView>;
 			} else if (Platform.OS === 'android') {
-				return <ProgressBarAndroid
+				return <ProgressBar
 					color={this.props.progressBarColor}
 					indeterminate={false}
 					progress={this.state.progress}
 					style={{ height: 4 }}
 					styleAttr='Horizontal'
-				></ProgressBarAndroid>;
+				></ProgressBar>;
 			}
 		}
 		return undefined;
@@ -290,15 +322,17 @@ export default class extends Component<Props, IOptionsState> {
 	}
 
 	private renderWebView() {
-		const props = this.props as (IProps1 & IProps2);
-		const { mm, uri, html } = props;
-		const emit = mm.emit;
-		if (!uri && !html) {
+		const props = this.props as (IProps1 & IProps2 & IProps3);
+		const { uri, html, src, onMessage } = props;
+		if (!uri && !html && !src) {
 			throw new Error('Please set the URI or HTML properties of WebView');
 		}
 		const source = (() => {
 			if (uri) {
 				return { uri };
+			}
+			if (src) {
+				return { uri: src };
 			}
 			return { html };
 		})() as { uri: string } | { html: string };
@@ -309,24 +343,31 @@ export default class extends Component<Props, IOptionsState> {
 				const data = JSON.parse(event.nativeEvent.data) as IMsg;
 				const webview = this.webview;
 				switch (data.type) {
-					case MessageType.webready:
+					case MessageType.weblisten:
 						{
-							const ready = props.onReady;
-							if (ready) {
-								ready();
+							const ids = this.weblisteners.get(data.msgtype) || [];
+							ids.push(data.id);
+							this.weblisteners.set(data.msgtype, ids);
+							const listen = props.onListen;
+							if (listen) {
+								listen(data.msgtype, this);
 							}
 						}
 						break;
 					case MessageType.native2web:
 						back(data);
 						break;
+					case MessageType.native2webe:
+						backe(data);
+						break;
 					case MessageType.web2native:
 						// 这时，web中应已注册全局函数 function m${id}(content: unknown);等待调用
-						{
-							const ret = await emit(mm, data.action, data.content);	// 在响应中第一个参数为mm，第二个参数即web页面发过来的数据
-							responseweb(webview, data, ret);
+						if (onMessage) {
+							const msg = JSON.parse(data.content as string) as unknown;
+							const ret = await onMessage(data.msgtype, msg);
+							responseweb(webview, data.id, ret);
 						}
-						// 这里无法拿到页面实例，无法通过 页面实例.refs[ctl_name] 访问到webview实例
+						// else timeout
 						break;
 					default:
 						throw new Error('Unknown message type');
@@ -347,18 +388,18 @@ export default class extends Component<Props, IOptionsState> {
 	}
 }
 
-
 enum MessageType {
-	webready,
+	weblisten,
 	web2native,
-	native2web
+	native2web,
+	native2webe
 }
 
 interface IMsg {
 	id: string;
 	type: MessageType;
-	action: string; // a001
 	content: unknown;
+	msgtype: string;
 }
 
 interface IDeferred<T> {
@@ -396,6 +437,13 @@ function back({ id, content }: IMsg) {
 	}
 }
 
+function backe({ id, content }: IMsg) {
+	const origin = pool.get(id);
+	if (origin) {
+		origin.reject(new Error(content as string));
+	}
+}
+
 function uuid() {
-	return Math.random().toString().substr(2);
+	return Math.random().toString().substring(2);
 }
