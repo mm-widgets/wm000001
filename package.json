@@ -1,6 +1,6 @@
 {
 	"name": "@mmstudio/wm000001",
-	"version": "2.0.1",
+	"version": "2.0.2",
 	"description": "WebView",
 	"scripts": {
 		"clean": "del-cli ./dist/",
