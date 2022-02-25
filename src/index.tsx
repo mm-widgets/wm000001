@@ -13,7 +13,7 @@ interface IOptionsState {
 }
 
 interface IBaseProps {
-	onMessage?<M>(type: string, msg: M): unknown;
+	onMessage?(type: string, msg: unknown): unknown;
 	/**
 	 * 进度条的环部分
 	 */
