@@ -7,7 +7,7 @@
 		"lint": "eslint ./src/**/*.tsx",
 		"compile": "tsc",
 		"build": "npm run clean && npm run lint && npm run compile",
-		"release": "yarn build && np"
+		"release": "yarn build && standard-version && git push --follow-tags origin main && npm publish"
 	},
 	"repository": {
 		"type": "https+git",
@@ -44,8 +44,10 @@
 	},
 	"dependencies": {
 		"@react-native-community/progress-bar-android": "^1.0.4",
-		"@react-native-community/progress-view": "^1.3.1",
-		"react-native-webview": "^11.17.2"
+		"@react-native-community/progress-view": "^1.3.1"
+	},
+	"peerDependencies": {
+		"react-native-webview": "^11"
 	},
 	"devDependencies": {
 		"@types/react": "latest",
@@ -57,9 +59,10 @@
 		"eslint-config-prettier": "latest",
 		"eslint-plugin-import": "latest",
 		"eslint-plugin-react": "latest",
-		"np": "latest",
+		"standard-version": "latest",
 		"react": "latest",
 		"react-native": "latest",
+		"react-native-webview": "latest",
 		"typescript": "next"
 	}
 }

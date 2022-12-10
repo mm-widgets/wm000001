@@ -295,8 +295,7 @@ export default class MMWebview extends Component<Props, IOptionsState> {
 						],
 						width: 50
 					}}
-				>
-				</Animated.Image>
+				/>
 				<Animated.Image
 					source={innersource}
 					style={[
@@ -314,8 +313,7 @@ export default class MMWebview extends Component<Props, IOptionsState> {
 							]
 						}
 					]}
-				>
-				</Animated.Image>
+				/>
 			</View>;
 		}
 		return undefined;
